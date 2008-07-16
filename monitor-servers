@@ -71,7 +71,7 @@ end
             alert_im "#{msg}" + res.error
           end
         rescue Timeout::Error
-          msg += "#{target['timeout']}超时"
+          msg += "#{target['timeout']}秒超时"
           unless target.index("bytes_range").nil?
             size = res.read_body.length
             rate = size / target.timeout / 1024
