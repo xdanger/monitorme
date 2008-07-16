@@ -1,7 +1,7 @@
 # 监测脚本的宿主
 hosts:
     Kazzak.local: # 这个是系统名称，hostname
-        label: "本机"
+        label: "kazzak"
     httpd-1.verycd.com: 
         label: "电信"
         dns: # 用哪些 DNS
