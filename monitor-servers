@@ -29,7 +29,7 @@ def alert_im(msg)
 end
 
 @config["targets"].each {|target|
-  Thread.new {
+#  Thread.new {
     url = URI.parse(target['url'])
     ips = []
     unless @dns.nil?
@@ -50,7 +50,7 @@ end
       alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 @#{@label}"
     end
     ips.each {|ip|
-      Thread.new {
+#      Thread.new {
         msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} @#{@label} "
         req = Net::HTTP::Get.new(url.path)
         req.add_field 'Host', url.host
@@ -80,7 +80,7 @@ end
           alert_im msg
         end
         puts msg + " OK"
-      }
+#      }
     }
-  }
+#  }
 }
