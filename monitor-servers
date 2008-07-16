@@ -54,9 +54,9 @@ end
         msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} @#{@label} "
         req = Net::HTTP::Get.new(url.path)
         req.add_field 'Host', url.host
-        unless target.index("bytes_range").nil?
-          ma = target.index("bytes_range").match(/^(\d+)\.\.(\d+)$/)
-          req.set_range ma[0].to_i, ma[1].to_i
+        if target.has_key? "bytes_range"
+          ma = target["bytes_range"].match(/^(\d+)\.\.(\d+)$/)
+          req.set_range ma[1].to_i, ma[2].to_i
         end
         begin
           http = Net::HTTP.new(ip, url.port)
@@ -65,14 +65,16 @@ end
       #    http.set_debug_output $stderr
           res = nil
           status = Timeout::timeout(target['timeout']) { res = http.request(req) }
+          pp res
           case res
           when Net::HTTPSuccess
+            # OK
           else
-            alert_im "#{msg}" + res.error
+            alert_im "#{msg} #{res}"
           end
         rescue Timeout::Error
           msg += "#{target['timeout']}秒超时"
-          unless target.index("bytes_range").nil?
+          if target.has_key? "bytes_range"
             size = res.read_body.length
             rate = size / target.timeout / 1024
             msg += " #{rate}/秒"
