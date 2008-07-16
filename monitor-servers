@@ -1,0 +1,117 @@
+#!/usr/local/bin/ruby
+
+require "resolv"
+require "net/http"
+require "uri"
+require 'timeout'
+
+def format_time(time)
+  time.strftime("%H:%M:%S")
+end
+
+def get_hostname
+  host = `hostname`.sub(/^([^\.]+)\..+\n$/, '\1')
+  line = ''
+  case host
+  when "httpd-1"
+    "电信"
+  when "coral"
+    "网通"
+  when "httpd-26"
+    "教育网"
+  else
+    "本地"
+  end
+end
+
+def test_dl(ip)
+  url = URI.parse("http://dl.verycd.com/FlashPlayer.exe")
+  src = "[#{format_time(Time.now)}] #{url.host}:#{ip} @" + get_hostname()
+  req = Net::HTTP::Get.new(url.path)
+  req.add_field 'Host', url.host
+  req.set_range 0, 512000
+  begin
+    http = Net::HTTP.new(ip, url.port)
+#    http.open_timeout = 1
+#    http.read_timeout = 1
+#    http.set_debug_output $stderr
+    status = Timeout::timeout(10) { http.request(req) }
+    res = http.request(req)
+  rescue Timeout::Error
+    puts "#{src} 小于50KBytes/秒"
+    alert_im "#{src} 小于50KBytes/秒"
+    return
+  end
+  case res
+  when Net::HTTPSuccess
+    puts "#{src} OK"
+  else
+    puts "#{src} " + res.error
+  end
+end
+
+def test_url(ip, url, timeout)
+    url = URI.parse(url)
+    src = "[#{format_time(Time.now)}] #{url.host}:#{ip} @" + get_hostname()
+    req = Net::HTTP::Get.new(url.path)
+    req.add_field 'Host', url.host
+    begin
+      http = Net::HTTP.new(ip, url.port)
+      status = Timeout::timeout(timeout) { http.request(req) }
+      http.request(req)
+    rescue Timeout::Error
+      puts "#{src} #{timeout}秒超时"
+      alert_im "#{src} #{timeout}秒超时"
+      return
+    end
+    puts "#{src} OK"
+end
+
+def alert_im(msg)
+  url = URI.parse("http://api.fanfou.com/statuses/update.xml")
+  req = Net::HTTP::Post.new(url.path)
+  req.basic_auth 'xdanger@verycd.com', 'vcalarm'
+  req.set_form_data({ 'status' => msg }, ';')
+  res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
+end
+
+def all_address_of(domain)
+  dns = ["202.96.209.134", "202.106.0.20", "211.136.112.50", "202.120.2.101", "208.67.222.222"]
+  ips = []
+  dns.each do |ns|
+#    res = Resolv::DNS.new(:nameserver => ns, :search => [''], :ndots => 1)
+    res = Resolv::DNS.new()
+    res.each_address(domain) do |ip|
+      ips.delete_if {|x| x == ip }
+      ips.push(ip)
+    end
+  end
+  ips
+end
+
+resolv_timeout = 10
+begin
+  ips = []
+  status = Timeout::timeout(resolv_timeout) {
+    ips = all_address_of("dl.verycd.com")
+  }
+  ips.each {|ip| test_dl ip.to_s }
+  status = Timeout::timeout(resolv_timeout) {
+    ips = all_address_of("7999.com")
+  }
+  ips.each {|ip| test_url ip.to_s, "http://7999.com/", 2 }
+  status = Timeout::timeout(resolv_timeout) {
+    ips = all_address_of("img.verycd.com")
+  }
+  ips.each {|ip| test_url ip.to_s, "http://img.verycd.com/pictures/d9/5f/188241.sq.jpg", 2 }
+  status = Timeout::timeout(resolv_timeout) {
+    ips = all_address_of("www.very.cd")
+  }
+  ips.each {|ip| test_url ip.to_s, "http://www.very.cd/", 2 }
+rescue Timeout::Error
+  msg = "域名解析超过#{resolv_timeout}秒 @" + get_hostname()
+  puts msg
+  alert_im msg
+end
+
+puts "Done"
