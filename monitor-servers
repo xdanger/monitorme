@@ -1,117 +1,90 @@
 #!/usr/local/bin/ruby
 
+require 'pp'
+require 'pathname'
+require 'yaml'
 require "resolv"
+require "socket"
 require "net/http"
 require "uri"
 require 'timeout'
 
-def format_time(time)
-  time.strftime("%H:%M:%S")
-end
-
-def get_hostname
-  host = `hostname`.sub(/^([^\.]+)\..+\n$/, '\1')
-  line = ''
-  case host
-  when "httpd-1"
-    "电信"
-  when "coral"
-    "网通"
-  when "httpd-26"
-    "教育网"
-  else
-    "本地"
-  end
-end
-
-def test_dl(ip)
-  url = URI.parse("http://dl.verycd.com/FlashPlayer.exe")
-  src = "[#{format_time(Time.now)}] #{url.host}:#{ip} @" + get_hostname()
-  req = Net::HTTP::Get.new(url.path)
-  req.add_field 'Host', url.host
-  req.set_range 0, 512000
-  begin
-    http = Net::HTTP.new(ip, url.port)
-#    http.open_timeout = 1
-#    http.read_timeout = 1
-#    http.set_debug_output $stderr
-    status = Timeout::timeout(10) { http.request(req) }
-    res = http.request(req)
-  rescue Timeout::Error
-    puts "#{src} 小于50KBytes/秒"
-    alert_im "#{src} 小于50KBytes/秒"
-    return
-  end
-  case res
-  when Net::HTTPSuccess
-    puts "#{src} OK"
-  else
-    puts "#{src} " + res.error
-  end
-end
-
-def test_url(ip, url, timeout)
-    url = URI.parse(url)
-    src = "[#{format_time(Time.now)}] #{url.host}:#{ip} @" + get_hostname()
-    req = Net::HTTP::Get.new(url.path)
-    req.add_field 'Host', url.host
-    begin
-      http = Net::HTTP.new(ip, url.port)
-      status = Timeout::timeout(timeout) { http.request(req) }
-      http.request(req)
-    rescue Timeout::Error
-      puts "#{src} #{timeout}秒超时"
-      alert_im "#{src} #{timeout}秒超时"
-      return
-    end
-    puts "#{src} OK"
+RESOLV_TIMEOUT = 10
+CURRENT_PATH = Pathname.new(__FILE__).realpath.dirname.to_s
+@config = YAML.load_file(CURRENT_PATH + "/config.yml")
+@label = '未知'
+# 设置已知宿主的名称和 dns
+if @config["hosts"].has_key? Socket.gethostname
+  host = @config["hosts"][Socket.gethostname]
+  @label = host["label"]
+  @dns = host["dns"]
 end
 
 def alert_im(msg)
   url = URI.parse("http://api.fanfou.com/statuses/update.xml")
   req = Net::HTTP::Post.new(url.path)
-  req.basic_auth 'xdanger@verycd.com', 'vcalarm'
+  req.basic_auth @config['fanfou']['username'], @config['fanfou']['password']
   req.set_form_data({ 'status' => msg }, ';')
   res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
 end
 
-def all_address_of(domain)
-  dns = ["202.96.209.134", "202.106.0.20", "211.136.112.50", "202.120.2.101", "208.67.222.222"]
-  ips = []
-  dns.each do |ns|
-#    res = Resolv::DNS.new(:nameserver => ns, :search => [''], :ndots => 1)
-    res = Resolv::DNS.new()
-    res.each_address(domain) do |ip|
-      ips.delete_if {|x| x == ip }
-      ips.push(ip)
-    end
-  end
-  ips
-end
+threads = []
 
-resolv_timeout = 10
-begin
-  ips = []
-  status = Timeout::timeout(resolv_timeout) {
-    ips = all_address_of("dl.verycd.com")
-  }
-  ips.each {|ip| test_dl ip.to_s }
-  status = Timeout::timeout(resolv_timeout) {
-    ips = all_address_of("7999.com")
-  }
-  ips.each {|ip| test_url ip.to_s, "http://7999.com/", 2 }
-  status = Timeout::timeout(resolv_timeout) {
-    ips = all_address_of("img.verycd.com")
-  }
-  ips.each {|ip| test_url ip.to_s, "http://img.verycd.com/pictures/d9/5f/188241.sq.jpg", 2 }
-  status = Timeout::timeout(resolv_timeout) {
-    ips = all_address_of("www.very.cd")
-  }
-  ips.each {|ip| test_url ip.to_s, "http://www.very.cd/", 2 }
-rescue Timeout::Error
-  msg = "域名解析超过#{resolv_timeout}秒 @" + get_hostname()
-  puts msg
-  alert_im msg
-end
+@config["targets"].each {|target|
+#  Thread.new {
+    url = URI.parse(target['url'])
+    ips = []
+    unless @dns.nil?
+      res = Resolv::DNS.new(:nameserver => @dns, :search => [''], :ndots => 1)
+    else
+      res = Resolv::DNS.new()
+    end
+    # 开始解析 DNS，控制超时
+    begin
+      Timeout::timeout(RESOLV_TIMEOUT) {
+        res.each_address(url.host) do |ip|
+          ip = ip.to_s
+          ips.delete_if {|x| x == ip }
+          ips.push(ip)
+        end
+      }
+    rescue Timeout::Error
+      alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 @#{@label}"
+    end
+    ips.each {|ip|
+#      Thread.new {
+        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} @#{@label} "
+        req = Net::HTTP::Get.new(url.path)
+        req.add_field 'Host', url.host
+        unless target.index("bytes_range").nil?
+          ma = target.index("bytes_range").match(/^(\d+)\.\.(\d+)$/)
+          req.set_range ma[0].to_i, ma[1].to_i
+        end
+        begin
+          http = Net::HTTP.new(ip, url.port)
+      #    http.open_timeout = 1
+      #    http.read_timeout = 1
+      #    http.set_debug_output $stderr
+          res = nil
+          status = Timeout::timeout(target['timeout']) { res = http.request(req) }
+          case res
+          when Net::HTTPSuccess
+          else
+            alert_im "#{msg}" + res.error
+          end
+        rescue Timeout::Error
+          msg += "#{target['timeout']}超时"
+          unless target.index("bytes_range").nil?
+            size = res.read_body.length
+            rate = size / target.timeout / 1024
+            msg += " #{rate}/秒"
+          end
+          alert_im msg
+        end
+        puts msg + " OK"
+#      }
+    }
+#  }
+}
 
 puts "Done"
