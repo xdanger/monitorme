@@ -1,0 +1,31 @@
+# 监测脚本的宿主
+hosts:
+    ctc.mydomain.com: # 这个是系统名称，hostname
+        label: "电信"
+        dns: # 用哪些 DNS 来解析 URL，可选
+            - 202.96.209.134
+            - 202.96.209.133
+    cnc.mydomain.com:
+        label: "网通"
+        dns:
+            - 210.22.70.3
+            - 210.22.70.20
+    edu.mydomain.com:
+        label: "教育网"
+        dns:
+            - 202.120.2.101
+            - 202.120.2.100
+# 监控目标
+targets:
+    -
+        url: "http://download.verycd.com/easyMule-Setup.exe"
+        bytes_range: "0..512000" # 读取的文件的字节范围，可选
+        timeout: 20
+    -
+        url: "http://img.verycd.com/pictures/d9/5f/188241.sq.jpg"
+        timeout: 4
+
+# 饭否帐号信息，用于 IM 通知
+fanfou:
+    username: "饭否注册的邮件地址"
+    password: "登录密码"
