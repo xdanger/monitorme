@@ -4,12 +4,14 @@ GNU General Public License v3, http://www.gnu.org/licenses/gpl.html
 
 Usage：
 1. 安装 ruby，见 http://www.ruby-lang.org/
-2. git clone git://github.com/xdanger/monitorme.git
-3. cd monitorme; cp config.example.yml config.yml
-4. 修改 config.yml，配置你的监控脚本的宿主和对象服务器，详情见 config.example.yml 里的注释
-5. 运行 ruby deploy.rb，将监控脚本部署到宿主服务器上
-6. 在各个宿主服务器上运行 ruby monitor.rb，测试下是否正常
-7. 将 ruby monitor.rb 加进后台 crontab 脚本，定期执行
+2. 安装 gems，见 http://www.rubygems.org/
+3. gem install net-sftp
+4. git clone git://github.com/xdanger/monitorme.git
+5. cd monitorme; cp config.example.yml config.yml
+6. 修改 config.yml，配置你的监控脚本的宿主和对象服务器，详情见 config.example.yml 里的注释
+7. 运行 ruby deploy.rb，将监控脚本部署到宿主服务器上
+8. 在各个宿主服务器上运行 ruby monitor.rb，测试下是否正常
+9. 将 ruby monitor.rb 加进后台 crontab 脚本，定期执行
 
 TODO:
 1. notify.rb 通知各宿主服务器执行监控
