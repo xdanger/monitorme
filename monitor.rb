@@ -1,24 +1,12 @@
 #!/usr/local/bin/ruby
 
-require 'pp'
-require 'pathname'
-require 'yaml'
 require "resolv"
 require "socket"
 require "net/http"
 require "uri"
 require 'timeout'
 
-RESOLV_TIMEOUT = 10
-CURRENT_PATH = Pathname.new(__FILE__).realpath.dirname.to_s
-@config = YAML.load_file(CURRENT_PATH + "/config.yml")
-@label = '未知'
-# 设置已知宿主的名称和 dns
-if @config["hosts"].has_key? Socket.gethostname
-  host = @config["hosts"][Socket.gethostname]
-  @label = host["label"]
-  @dns = host["dns"]
-end
+require 'prepend'
 
 def alert_im(msg)
   puts msg
@@ -29,6 +17,13 @@ def alert_im(msg)
   res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
 end
 
+@label = '未知'
+# 设置已知宿主的名称和 dns
+if @config["hosts"].has_key? Socket.gethostname
+  host = @config["hosts"][Socket.gethostname]
+  @label = host["label"]
+  @dns = host["dns"]
+end
 @config["targets"].each {|target|
 #  Thread.new {
     url = URI.parse(target['url'])

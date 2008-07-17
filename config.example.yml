@@ -1,17 +1,23 @@
 # 监测脚本的宿主
 hosts:
-    ctc.mydomain.com: # 这个是系统名称，hostname
+    localhost: # 这个是系统名称，hostname
+        label: "kazzak"
+        deploy_dir: "/Users/xdanger/Workspace/MonitorMe"
+    ctc.mydomain.com:
         label: "电信"
+        login: "root@xxx.xxx.xxx.xxx" # 登录帐号@IP，如果没有，则认为是本地的，将不把程序发布过去
         dns: # 用哪些 DNS 来解析 URL，可选
             - 202.96.209.134
             - 202.96.209.133
     cnc.mydomain.com:
         label: "网通"
+        login: "root@xxx.xxx.xxx.xxx"
         dns:
             - 210.22.70.3
             - 210.22.70.20
     edu.mydomain.com:
         label: "教育网"
+        login: "root@xxx.xxx.xxx.xxx"
         dns:
             - 202.120.2.101
             - 202.120.2.100
