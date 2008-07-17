@@ -1,0 +1,11 @@
+监控脚本
+Copyright xdanger@gmail.com
+
+用法：
+1. 安装 ruby，见 http://www.ruby-lang.org/
+2. git clone git://github.com/xdanger/monitorme.git
+3. cd monitorme; cp config.example.yml config.yml
+4. 修改 config.yml，配置你的监控脚本的宿主和对象服务器，详情见 config.example.yml 里的注释
+5. 将整个目录 rsync 到各个宿主服务器上
+6. 在宿主服务器上运行 ruby monitor-servers，测试下是否正常
+7. 将 ruby monitor-servers 加进后台 crontab 脚本，定期执行
