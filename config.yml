@@ -9,9 +9,6 @@ hosts:
             - 202.96.209.133
     coral.xdanger.net:
         label: "网通"
-        dns:
-            - 210.22.70.3
-            - 210.22.70.20
     httpd-26.verycd.com:
         label: "教育网"
         dns:
