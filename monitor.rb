@@ -26,6 +26,13 @@ if @config["hosts"].has_key? Socket.gethostname
 end
 @config["targets"].each {|target|
 #  Thread.new {
+    if @config['hosts'].has_key? 'skip_targets'
+      @config['hosts']['skip_targets'].each {|u|
+        if u == target['url']
+          next
+        end
+      }
+    end
     url = URI.parse(target['url'])
     ips = []
     unless @dns.nil?
@@ -64,7 +71,7 @@ end
           msg += "#{target['timeout']}秒超时"
           if target.has_key? "bytes_range"
             rate = (req.range.first.end - req.range.first.first) / target['timeout'] / 1024
-            msg += " 不足 #{rate}/秒"
+            msg += " 不足 #{rate}Kbytes/秒"
           end
         end
         case res
