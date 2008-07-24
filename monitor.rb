@@ -18,20 +18,25 @@ def alert_im(msg)
 end
 
 @label = '未知'
+@host  = Socket.gethostname
 # 设置已知宿主的名称和 dns
-if @config["hosts"].has_key? Socket.gethostname
-  host = @config["hosts"][Socket.gethostname]
+if @config["hosts"].has_key? @host
+  host = @config["hosts"][@host]
   @label = host["label"]
   @dns = host["dns"]
 end
 @config["targets"].each {|target|
 #  Thread.new {
-    if @config['hosts'].has_key? 'skip_targets'
-      @config['hosts']['skip_targets'].each {|u|
+    skip = false
+    if @config['hosts'][@host].has_key? 'skip_targets'
+      @config['hosts'][@host]['skip_targets'].each {|u|
         if u == target['url']
-          next
+          skip = true
         end
       }
+      if skip
+        next
+      end
     end
     url = URI.parse(target['url'])
     ips = []
