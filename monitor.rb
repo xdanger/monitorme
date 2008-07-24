@@ -55,11 +55,11 @@ end
         end
       }
     rescue Timeout::Error
-      alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 @#{@label}"
+      alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{@label}"
     end
     ips.each {|ip|
 #      Thread.new {
-        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} @#{@label} "
+        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} from #{@label} "
         req = Net::HTTP::Get.new(url.path)
         req.add_field 'Host', url.host
         if target.has_key? "bytes_range"
