@@ -63,7 +63,7 @@ end
     end
     ips.each {|ip|
 #      Thread.new {
-        log = 'log/' + Digest::SHA1.hexdigest(ip + target['url'])
+        log = CURRENT_PATH + '/log/' + Digest::SHA1.hexdigest(ip + target['url'])
         msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host} : #{ip} from #{@label} "
         warn = false
         con = Ping.pingecho url.host, CONNECTION_TIMEOUT, 80
@@ -102,9 +102,15 @@ end
           if File.exists? log
             times = File.read(log).to_i
           end
-          times ++
+          times += 1
+          msg += " 已"
+          if times > 1
+            msg += "连续"
+          end
+          msg += "#{times}次失败"
+          puts msg
           if target['warn'] <= times
-            alert_im msg + " 已连续#{times}次失败"
+            alert_im msg
           end
           f = File.new(log, "w")
           f.write(times)
