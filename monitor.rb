@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 
 require "resolv"
+require 'ping'
 require "socket"
 require "net/http"
 require "uri"
@@ -60,31 +61,37 @@ end
     ips.each {|ip|
 #      Thread.new {
         msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} from #{@label} "
-        req = Net::HTTP::Get.new(url.path)
-        req.add_field 'Host', url.host
-        if target.has_key? "bytes_range"
-          ma = target["bytes_range"].match(/^(\d+)\.\.(\d+)$/)
-          req.set_range ma[1].to_i, ma[2].to_i
-        end
         warn = false
-        http = Net::HTTP.new(ip, url.port)
-#        http.open_timeout = 1; http.read_timeout = 1; http.set_debug_output $stderr
-        begin
-          Timeout::timeout(target['timeout']) { res = http.request(req) }
-        rescue Timeout::Error
+        con = Ping.pingecho url.host, 5, 80
+        unless con
           warn = true
-          msg += "#{target['timeout']}秒超时"
-          if target.has_key? "bytes_range"
-            rate = (req.range.first.end - req.range.first.first) / target['timeout'] / 1024
-            msg += " 不足 #{rate}Kbytes/秒"
-          end
-        end
-        case res
-        when Net::HTTPSuccess
-          # OK
+          msg += " 5秒无法连接上80端口"
         else
-          warn = true
-          msg +=" #{@res}"
+          req = Net::HTTP::Get.new(url.path)
+          req.add_field 'Host', url.host
+          if target.has_key? "bytes_range"
+            ma = target["bytes_range"].match(/^(\d+)\.\.(\d+)$/)
+            req.set_range ma[1].to_i, ma[2].to_i
+          end
+          http = Net::HTTP.new(ip, url.port)
+  #        http.open_timeout = 1; http.read_timeout = 1; http.set_debug_output $stderr
+          begin
+            Timeout::timeout(target['timeout']) { res = http.request(req) }
+          rescue Timeout::Error
+            warn = true
+            msg += "#{target['timeout']}秒超时"
+            if target.has_key? "bytes_range"
+              rate = (req.range.first.end - req.range.first.first) / target['timeout'] / 1024
+              msg += " 不足 #{rate}Kbytes/秒"
+            end
+          end
+          case res
+          when Net::HTTPSuccess
+            # OK
+          else
+            warn = true
+            msg +=" #{@res}"
+          end
         end
         if warn
           alert_im msg

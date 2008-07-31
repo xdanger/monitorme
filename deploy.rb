@@ -26,7 +26,7 @@ require 'prepend'
       sftp.mkdir(host['deploy_dir']).wait
     end
     puts "正在部署到#{name}:#{host['deploy_dir']}"
-    ['config.yml', 'prepend.rb', 'monitor.rb'].each {|f|
+    ['config.yml', 'prepend.rb', 'monitor.rb', 'test-dl.sh', 'test-url.sh'].each {|f|
       upld = sftp.upload("#{CURRENT_PATH}/#{f}", "#{host['deploy_dir']}/#{f}")
       upld.wait
     }
