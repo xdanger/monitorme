@@ -1,13 +1,16 @@
 #!/usr/local/bin/ruby
 
-require "resolv"
+require 'resolv'
 require 'ping'
-require "socket"
-require "net/http"
-require "uri"
+require 'socket'
+require 'net/http'
+require 'uri'
 require 'timeout'
+require 'digest'
 
 require 'prepend'
+
+CONNECTION_TIMEOUT = 10
 
 def alert_im(msg)
   puts msg
@@ -60,12 +63,13 @@ end
     end
     ips.each {|ip|
 #      Thread.new {
-        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host}:#{ip} from #{@label} "
+        log = 'log/' + Digest::SHA1.hexdigest(ip + target['url'])
+        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host} : #{ip} from #{@label} "
         warn = false
-        con = Ping.pingecho url.host, 5, 80
+        con = Ping.pingecho url.host, CONNECTION_TIMEOUT, 80
         unless con
           warn = true
-          msg += " 5秒无法连接上80端口"
+          msg += " #{CONNECTION_TIMEOUT}秒无法连接上80端口（紧急！）"
         else
           req = Net::HTTP::Get.new(url.path)
           req.add_field 'Host', url.host
@@ -94,8 +98,21 @@ end
           end
         end
         if warn
-          alert_im msg
+          times = 0
+          if File.exists? log
+            times = File.read(log).to_i
+          end
+          times ++
+          if target['warn'] <= times
+            alert_im msg + " 已连续#{times}次失败"
+          end
+          f = File.new(log, "w")
+          f.write(times)
+          f.close
         else
+          if File.exists? log
+            File.delete log
+          end
           puts msg + " OK"
         end
 #      }

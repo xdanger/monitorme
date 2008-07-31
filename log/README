@@ -1,0 +1,2 @@
+这个目录用于记录各个IP+Target的监控记录
+生成的文件名为：Digest::SHA1.hexdigest(IP+TARGET)
