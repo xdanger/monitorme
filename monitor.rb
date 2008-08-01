@@ -34,13 +34,9 @@ end
     skip = false
     if @config['hosts'][@host].has_key? 'skip_targets'
       @config['hosts'][@host]['skip_targets'].each {|u|
-        if u == target['url']
-          skip = true
-        end
+        skip = true if u == target['url']
       }
-      if skip
-        next
-      end
+      next if skip
     end
     url = URI.parse(target['url'])
     ips = []
@@ -65,10 +61,10 @@ end
 #      Thread.new {
         log = CURRENT_PATH + '/log/' + Digest::SHA1.hexdigest(ip + target['url'])
         msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host} : #{ip} from #{@label} "
-        warn = false
+        alt = false
         con = Ping.pingecho url.host, CONNECTION_TIMEOUT, 80
         unless con
-          warn = true
+          alt  = true
           msg += " #{CONNECTION_TIMEOUT}秒无法连接上80端口（紧急！）"
         else
           req = Net::HTTP::Get.new(url.path)
@@ -82,7 +78,7 @@ end
           begin
             Timeout::timeout(target['timeout']) { res = http.request(req) }
           rescue Timeout::Error
-            warn = true
+            alt  = true
             msg += "#{target['timeout']}秒超时"
             if target.has_key? "bytes_range"
               rate = (req.range.first.end - req.range.first.first) / target['timeout'] / 1024
@@ -93,32 +89,24 @@ end
           when Net::HTTPSuccess
             # OK
           else
-            warn = true
+            alt  = true
             msg +=" #{@res}"
           end
         end
-        if warn
+        if alt
           times = 0
-          if File.exists? log
-            times = File.read(log).to_i
-          end
+          times = File.read(log).to_i if File.exists? log
           times += 1
           msg += " 已"
-          if times > 1
-            msg += "连续"
-          end
+          msg += "连续" if times > 1
           msg += "#{times}次失败"
           puts msg
-          if target['warn'] <= times
-            alert_im msg
-          end
+          alert_im msg if times % target['alert_interval'] == 0
           f = File.new(log, "w")
           f.write(times)
           f.close
         else
-          if File.exists? log
-            File.delete log
-          end
+          File.delete log if File.exists? log
           puts msg + " OK"
         end
 #      }
