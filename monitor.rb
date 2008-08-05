@@ -56,6 +56,7 @@ end
       }
     rescue Timeout::Error
       alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{@label}"
+      next
     end
     ips.each {|ip|
 #      Thread.new {
