@@ -9,29 +9,41 @@ hosts:
         dns: # 用哪些 DNS 来解析 URL，可选
             - 202.96.209.134
             - 202.96.209.133
+        deploy_dir: "/root/monitorme"
     cnc.mydomain.com:
         label: "网通"
         login: "root@xxx.xxx.xxx.xxx"
         dns:
             - 210.22.70.3
             - 210.22.70.20
+        deploy_dir: "/root/monitorme"
+        skip_targets:
+            - "http://download.verycd.com/easyMule-Setup.exe"
     edu.mydomain.com:
         label: "教育网"
         login: "root@xxx.xxx.xxx.xxx"
         dns:
             - 202.120.2.101
             - 202.120.2.100
+        deploy_dir: "/root/monitorme"
 # 监控目标
 targets:
     -
         url: "http://download.verycd.com/easyMule-Setup.exe"
         bytes_range: "0..512000" # 读取的文件的字节范围，可选
         timeout: 20
+        # 失败几次才报警
+        alert_interval: 2
     -
         url: "http://img.verycd.com/pictures/d9/5f/188241.sq.jpg"
         timeout: 4
+        alert_interval: 1
 
-# 饭否帐号信息，用于 IM 通知
-fanfou:
-    username: "饭否注册的邮件地址"
-    password: "登录密码"
+# 用于 IM 通知的 bots
+bots:
+    # 饭否帐号信息，目前只支持 fanfou 和 jiwai
+    fanfou:
+        username: "饭否注册的邮件地址"
+        password: "登录密码"
+    
+        

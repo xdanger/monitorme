@@ -14,22 +14,36 @@ CONNECTION_TIMEOUT = 10
 
 def alert_im(msg)
   puts msg
-  url = URI.parse("http://api.fanfou.com/statuses/update.xml")
-  req = Net::HTTP::Post.new(url.path)
-  req.basic_auth @config['fanfou']['username'], @config['fanfou']['password']
-  req.set_form_data({ 'status' => msg }, ';')
-  res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
+  unless @config.has_key? 'bots'
+    return
+  end
+  @config['bots'].each {|key, cfg|
+    case key
+    when 'fanfou'      
+      url = URI.parse("http://api.fanfou.com/statuses/update.xml")
+      req = Net::HTTP::Post.new(url.path)
+      req.basic_auth cfg['username'], cfg['password']
+      req.set_form_data({ 'status' => msg }, ';')
+      res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
+    when 'jiwai'
+      url = URI.parse("http://api.jiwai.de/statuses/update.xml")
+      req = Net::HTTP::Post.new(url.path)
+      req.basic_auth cfg['username'], cfg['password']
+      req.set_form_data({ 'status' => msg }, ';')
+      res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
+    end
+  }
 end
 
 @label = '未知'
 @host  = Socket.gethostname
 # 设置已知宿主的名称和 dns
-if @config["hosts"].has_key? @host
-  host = @config["hosts"][@host]
-  @label = host["label"]
-  @dns = host["dns"]
+if @config['hosts'].has_key? @host
+  host = @config['hosts'][@host]
+  @label = host['label']
+  @dns = host['dns']
 end
-@config["targets"].each {|target|
+@config['targets'].each {|target|
 #  Thread.new {
     skip = false
     if @config['hosts'][@host].has_key? 'skip_targets'
@@ -55,7 +69,7 @@ end
         end
       }
     rescue Timeout::Error
-      alert_im "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{@label}"
+      puts "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{@label}"
       next
     end
     ips.each {|ip|
@@ -70,8 +84,8 @@ end
         else
           req = Net::HTTP::Get.new(url.path)
           req.add_field 'Host', url.host
-          if target.has_key? "bytes_range"
-            ma = target["bytes_range"].match(/^(\d+)\.\.(\d+)$/)
+          if target.has_key? 'bytes_range'
+            ma = target['bytes_range'].match(/^(\d+)\.\.(\d+)$/)
             req.set_range ma[1].to_i, ma[2].to_i
           end
           http = Net::HTTP.new(ip, url.port)
@@ -81,7 +95,7 @@ end
           rescue Timeout::Error
             alt  = true
             msg += "#{target['timeout']}秒超时"
-            if target.has_key? "bytes_range"
+            if target.has_key? 'bytes_range'
               rate = (req.range.first.end - req.range.first.first) / target['timeout'] / 1024
               msg += " 不足 #{rate}Kbytes/秒"
             end
@@ -103,7 +117,7 @@ end
           msg += "#{times}次失败"
           puts msg
           alert_im msg if times % target['alert_interval'] == 0
-          f = File.new(log, "w")
+          f = File.new(log, 'w')
           f.write(times)
           f.close
         else
