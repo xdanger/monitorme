@@ -12,14 +12,15 @@ require 'prepend'
 
 CONNECTION_TIMEOUT = 10
 
-def alert_im(msg)
+def alert_im(webmasters, msg)
   puts msg
-  unless @config.has_key? 'bots'
+  unless @config.has_key? 'webmasters'
     return
   end
-  @config['bots'].each {|key, cfg|
-    case key
-    when 'fanfou'      
+  @config['webmasters'].each {|wm, cfg|
+    next unless webmasters.include? wm
+    case cfg['vendor']
+    when 'fanfou'
       url = URI.parse("http://api.fanfou.com/statuses/update.xml")
       req = Net::HTTP::Post.new(url.path)
       req.basic_auth cfg['username'], cfg['password']
@@ -116,7 +117,9 @@ end
           msg += "连续" if times > 1
           msg += "#{times}次失败"
           puts msg
-          alert_im msg if times % target['alert_interval'] == 0
+          if target.has_key? 'webmasters'
+            alert_im(target['webmasters'], msg) if times % target['alert_interval'] == 0
+          end
           f = File.new(log, 'w')
           f.write(times)
           f.close
