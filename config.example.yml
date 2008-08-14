@@ -6,7 +6,7 @@ hosts:
     ctc.mydomain.com:
         label: "电信"
         login: "root@xxx.xxx.xxx.xxx" # 登录帐号@IP，如果没有，则认为是本地的，将不把程序发布过去
-        dns: # 用哪些 DNS 来解析 URL，可选
+        dns: # 用哪些 DNS 来解析 URL，可选。留空则使用系统 DNS
             - 202.96.209.134
             - 202.96.209.133
         deploy_dir: "/root/monitorme"
@@ -34,16 +34,26 @@ targets:
         timeout: 20
         # 失败几次才报警
         alert_interval: 2
+        webmasters: #出问题后通知哪些微博服务。配置见 /webmasters 项
+            - verycd
     -
         url: "http://img.verycd.com/pictures/d9/5f/188241.sq.jpg"
         timeout: 4
         alert_interval: 1
+        webmasters:
+            - verycd
+            - blogbus
 
-# 用于 IM 通知的 bots
-bots:
-    # 饭否帐号信息，目前只支持 fanfou 和 jiwai
-    fanfou:
+# 用于 IM 通知的微博
+webmasters:
+    verycd:
+        # 帐号信息，目前只支持 fanfou 和 jiwai
+        vendor: fanfou
         username: "饭否注册的邮件地址"
         password: "登录密码"
-    
+    blogbus:
+        vendor: jiwai
+        username: "jiwai的登陆邮件地址"
+        password: "登录密码"
+
         
