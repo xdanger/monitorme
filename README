@@ -2,6 +2,10 @@
 
 GNU General Public License v3, http://www.gnu.org/licenses/gpl.html
 
+原理：
+本程序是一个分布式服务器监控报警系统。主程序用ruby实现，在监控服务器上需要安装ruby和其他依赖的ruby库。
+部署后，各个监测点定期向配置的目标请求，如果超时达到配置所规定的限度，并且连续次数也超过，则发起报警。报警通过饭否和叽歪（目前仅支持这2种）提供的API发送至指定帐号，每个监测目标可以独立设置报警帐号，网管用自己的个人饭否或叽歪的帐号关注该帐号，并且在网站上设置将好友信息推送至自己的IM客户端，以实现跨平台跨IM的报警。
+
 Usage：
 1. 安装 ruby，见 http://www.ruby-lang.org/
 2. 安装 gems，见 http://www.rubygems.org/
@@ -11,11 +15,9 @@ Usage：
 6. 修改 config.yml，配置你的监控脚本的宿主和对象服务器，详情见 config.example.yml 里的注释
 7. 运行 ruby deploy.rb，将监控脚本部署到宿主服务器上
 8. 在各个宿主服务器上运行 ruby monitor.rb，测试下是否正常
-9. 将 ruby monitor.rb 加进后台 crontab 脚本，定期执行
+9. 将 ruby monitor.rb 加进后台 crontab 脚本，定期执行。（建议每分钟，监测目标多的可以每2分钟）
 
 TODO:
-1. 目标服务器与报警设置绑定
-2. notify.rb 通知各宿主服务器执行监控
-3. 生成状态图片
-4. 制作成 gems 安装包
-
+1. notify.rb 通知各宿主服务器执行监控
+2. 生成状态图片
+3. 制作成 gems 安装包
