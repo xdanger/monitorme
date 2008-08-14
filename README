@@ -14,8 +14,8 @@ Usage：
 9. 将 ruby monitor.rb 加进后台 crontab 脚本，定期执行
 
 TODO:
-1. notify.rb 通知各宿主服务器执行监控
-2. 报警更智能，有历史记录功能
+1. 目标服务器与报警设置绑定
+2. notify.rb 通知各宿主服务器执行监控
 3. 生成状态图片
 4. 制作成 gems 安装包
 
