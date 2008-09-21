@@ -76,7 +76,7 @@ end
     ips.each {|ip|
 #      Thread.new {
         log = CURRENT_PATH + '/log/' + Digest::SHA1.hexdigest(ip + target['url'])
-        msg = "[#{Time.now.strftime('%H:%M:%S')}] #{url.host} : #{ip} from #{@label} "
+        msg = "#{Time.now.strftime('[%Y-%m-%d] %H:%M:%S')} #{url.host} : #{ip} from #{@label} "
         alt = false
         con = Ping.pingecho url.host, CONNECTION_TIMEOUT, 80
         unless con
