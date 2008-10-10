@@ -1,5 +1,3 @@
-#!/usr/local/bin/ruby
-
 require 'resolv'
 require 'ping'
 require 'socket'
@@ -14,10 +12,10 @@ CONNECTION_TIMEOUT = 10
 
 def alert_im(webmasters, msg)
   puts msg
-  unless @config.has_key? 'webmasters'
+  unless $config.has_key? 'webmasters'
     return
   end
-  @config['webmasters'].each {|wm, cfg|
+  $config['webmasters'].each do |wm, cfg|
     next unless webmasters.include? wm
     case cfg['vendor']
     when 'fanfou'
@@ -33,50 +31,48 @@ def alert_im(webmasters, msg)
       req.set_form_data({ 'status' => msg }, ';')
       res = Net::HTTP.start(url.host, url.port) { |http| http.request(req) }
     end
-  }
+  end
 end
 
-@label = '未知'
-@host  = Socket.gethostname
+$labellabel = '未知'
+$host  = Socket.gethostname
 # 设置已知宿主的名称和 dns
-if @config['hosts'].has_key? @host
-  host = @config['hosts'][@host]
-  @label = host['label']
-  @dns = host['dns']
+if $config['hosts'].has_key? $host
+  host = $config['hosts'][$host]
+  $label = host['label']
+  $dns = host['dns']
 end
-@config['targets'].each {|target|
-#  Thread.new {
+$config['targets'].each do |target|
+#  Thread.new do
     skip = false
-    if @config['hosts'][@host].has_key? 'skip_targets'
-      @config['hosts'][@host]['skip_targets'].each {|u|
-        skip = true if u == target['url']
-      }
+    if $config['hosts'][$host].has_key? 'skip_targets'
+      $config['hosts'][$host]['skip_targets'].each {|u| skip = true if u == target['url'] }
       next if skip
     end
     url = URI.parse(target['url'])
     ips = []
-    unless @dns.nil?
-      res = Resolv::DNS.new(:nameserver => @dns, :search => [''], :ndots => 1)
+    unless $dns.nil?
+      $res = Resolv::DNS.new(:nameserver => $dns, :search => [''], :ndots => 1)
     else
-      res = Resolv::DNS.new()
+      $res = Resolv::DNS.new()
     end
     # 开始解析 DNS，控制超时
     begin
-      Timeout::timeout(RESOLV_TIMEOUT) {
-        res.each_address(url.host) do |ip|
+      Timeout::timeout(RESOLV_TIMEOUT) do
+        $res.each_address(url.host) do |ip|
           ip = ip.to_s
           ips.delete_if {|x| x == ip }
           ips.push(ip)
         end
-      }
+      end
     rescue Timeout::Error
-      puts "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{@label}"
+      puts "DNS解析超过#{RESOLV_TIMEOUT}秒 from #{$label}"
       next
     end
-    ips.each {|ip|
-#      Thread.new {
+    ips.each do |ip|
+#      Thread.new do
         log = CURRENT_PATH + '/log/' + Digest::SHA1.hexdigest(ip + target['url'])
-        msg = "#{Time.now.strftime('[%Y-%m-%d] %H:%M:%S')} #{url.host} : #{ip} from #{@label} "
+        msg = "#{Time.now.strftime('[%Y-%m-%d] %H:%M:%S')} #{url.host} : #{ip} from #{$label} "
         alt = false
         con = Ping.pingecho url.host, CONNECTION_TIMEOUT, 80
         unless con
@@ -92,7 +88,7 @@ end
           http = Net::HTTP.new(ip, url.port)
   #        http.open_timeout = 1; http.read_timeout = 1; http.set_debug_output $stderr
           begin
-            Timeout::timeout(target['timeout']) { res = http.request(req) }
+            Timeout::timeout(target['timeout']) { $res = http.request(req) }
           rescue Timeout::Error
             alt  = true
             msg += "#{target['timeout']}秒超时"
@@ -101,12 +97,12 @@ end
               msg += " 不足 #{rate}Kbytes/秒"
             end
           end
-          case res
+          case $res
           when Net::HTTPSuccess
             # OK
           else
             alt  = true
-            msg +=" #{@res}"
+            msg +=" #{$res}"
           end
         end
         if alt
@@ -127,7 +123,7 @@ end
           File.delete log if File.exists? log
           puts msg + " OK"
         end
-#      }
-    }
-#  }
-}
+#      end
+    end
+#  end
+end
