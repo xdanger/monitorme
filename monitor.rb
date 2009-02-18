@@ -81,6 +81,7 @@ $config['targets'].each do |target|
         else
           req = Net::HTTP::Get.new(url.path)
           req.add_field 'Host', url.host
+          req.add_field 'User-Agent', "MonitorMe/1.0 (Poweredby xdanger@gmail.com)"
           if target.has_key? 'bytes_range'
             ma = target['bytes_range'].match(/^(\d+)\.\.(\d+)$/)
             req.set_range ma[1].to_i, ma[2].to_i
