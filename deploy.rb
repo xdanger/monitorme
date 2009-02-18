@@ -18,7 +18,7 @@ $config["hosts"].each do |name, host|
   Net::SFTP.start(addr, user) do |sftp|
     begin
       dir = sftp.opendir! host['deploy_dir']
-    rescue Net::SFTP::StatusException
+    rescue
       puts "打开#{host['deploy_dir']}失败 @#{name}，正在创建目录"
       sftp.mkdir(host['deploy_dir']).wait
       sftp.mkdir(host['deploy_dir'] + '/log').wait
