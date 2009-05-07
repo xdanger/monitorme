@@ -89,6 +89,7 @@ $config['targets'].each do |target|
           http = Net::HTTP.new(ip, url.port)
   #        http.open_timeout = 1; http.read_timeout = 1; http.set_debug_output $stderr
           begin
+            $res = nil
             Timeout::timeout(target['timeout']) { $res = http.request(req) }
           rescue Timeout::Error
             alt  = true
